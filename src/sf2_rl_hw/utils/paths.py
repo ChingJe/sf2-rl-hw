@@ -19,6 +19,13 @@ class RunArtifacts:
     logs_dir: Path
 
 
+@dataclass
+class ScopedArtifacts:
+    root_dir: Path
+    run_name: str
+    output_dir: Path
+
+
 def project_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
@@ -55,6 +62,18 @@ def prepare_run_artifacts(output_dir: str, experiment_name: str) -> RunArtifacts
         eval_dir=eval_dir,
         videos_dir=videos_dir,
         logs_dir=logs_dir,
+    )
+
+
+def prepare_scoped_artifacts(output_dir: str, experiment_name: str, scope: str) -> ScopedArtifacts:
+    root_dir = resolve_output_root(output_dir)
+    run_name = build_run_name(experiment_name)
+    scoped_dir = root_dir / scope / experiment_name / run_name
+    scoped_dir.mkdir(parents=True, exist_ok=True)
+    return ScopedArtifacts(
+        root_dir=root_dir,
+        run_name=run_name,
+        output_dir=scoped_dir,
     )
 
 

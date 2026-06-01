@@ -10,7 +10,7 @@ from .rollout import run_policy_episodes
 from .utils.logging import dump_json, emit_section
 from .utils.paths import (
     checkpoint_step_from_path,
-    prepare_run_artifacts,
+    prepare_scoped_artifacts,
     resolve_checkpoint_path,
 )
 
@@ -23,18 +23,22 @@ def run_evaluation(config_path: Path, checkpoint_override: Optional[Path] = None
         output_dir=config.runtime.output_dir,
         experiment_name=config.experiment_name,
     )
-    artifacts = prepare_run_artifacts(config.runtime.output_dir, config.experiment_name)
-    dump_json(artifacts.run_dir / "resolved_config.json", resolved)
+    artifacts = prepare_scoped_artifacts(
+        config.runtime.output_dir,
+        config.experiment_name,
+        scope="eval",
+    )
+    dump_json(artifacts.output_dir / "resolved_config.json", resolved)
 
     summary, episodes = evaluate_checkpoint(
         config=config,
         checkpoint_path=checkpoint_path,
-        output_dir=artifacts.eval_dir,
+        output_dir=artifacts.output_dir,
     )
     emit_section(
         "Evaluation",
         [
-            f"run_dir={artifacts.run_dir}",
+            f"output_dir={artifacts.output_dir}",
             f"checkpoint={checkpoint_path}",
             f"win_rate={summary['win_rate']:.2%}",
             f"mean_episode_return={summary['mean_episode_return']:.4f}",

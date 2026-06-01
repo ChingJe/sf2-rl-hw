@@ -13,7 +13,7 @@ from .utils.paths import (
     checkpoint_step_from_path,
     checkpoints_from_glob,
     latest_checkpoint,
-    prepare_run_artifacts,
+    prepare_scoped_artifacts,
     resolve_checkpoint_path,
     select_latest_checkpoints,
     video_filename,
@@ -28,8 +28,12 @@ def run_recording(
     glob_pattern: Optional[str] = None,
 ) -> None:
     config, resolved = load_experiment_config(config_path)
-    artifacts = prepare_run_artifacts(config.runtime.output_dir, config.experiment_name)
-    dump_json(artifacts.run_dir / "resolved_config.json", resolved)
+    artifacts = prepare_scoped_artifacts(
+        config.runtime.output_dir,
+        config.experiment_name,
+        scope="videos",
+    )
+    dump_json(artifacts.output_dir / "resolved_config.json", resolved)
 
     checkpoints = resolve_recording_targets(
         config=config,
@@ -45,7 +49,7 @@ def run_recording(
         payload = record_checkpoint(
             config=config,
             checkpoint_path=checkpoint_path,
-            output_dir=artifacts.videos_dir,
+            output_dir=artifacts.output_dir,
         )
         batch_results.append(
             {
@@ -59,7 +63,7 @@ def run_recording(
         total_errors += len(payload["errors"])
 
     dump_json(
-        artifacts.videos_dir / "batch_record_manifest.json",
+        artifacts.output_dir / "batch_record_manifest.json",
         {
             "experiment_name": config.experiment_name,
             "targets": len(checkpoints),
@@ -72,11 +76,10 @@ def run_recording(
     emit_section(
         "Recording",
         [
-            f"run_dir={artifacts.run_dir}",
+            f"output_dir={artifacts.output_dir}",
             f"targets={len(checkpoints)}",
             f"videos={total_videos}",
             f"errors={total_errors}",
-            f"output_dir={artifacts.videos_dir}",
         ],
     )
     if total_errors:
