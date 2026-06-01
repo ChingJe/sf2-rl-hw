@@ -36,6 +36,7 @@ def run_policy_episodes(
     episode_end_callback: Optional[Callable[[int, EpisodeMetrics], None]] = None,
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
     episode_summaries: List[EpisodeMetrics] = []
+    action_labels = action_labels_from_env(env)
 
     for episode_index in range(episodes):
         if episode_start_callback:
@@ -65,7 +66,7 @@ def run_policy_episodes(
                 "checkpoint_step": checkpoint_step if checkpoint_step is not None else "manual",
                 "episode": episode_index + 1,
                 "env_step": info.get("env_step", episode_length),
-                "action": action_to_text(action),
+                "action": action_to_text(action, action_labels),
                 "instant_reward": float(reward),
                 "episode_return": episode_return,
                 "agent_hp": int(info.get("agent_hp", 0)),
@@ -141,12 +142,32 @@ def step_env(env: Any, action: Any) -> Tuple[Any, float, bool, Dict[str, Any]]:
     return observation, float(reward), bool(done), dict(info)
 
 
-def action_to_text(action: Any) -> str:
+def action_to_text(action: Any, labels: Optional[List[str]] = None) -> str:
     if isinstance(action, np.ndarray):
         if action.ndim == 0:
             return str(action.item())
+        if labels and action.ndim == 1 and len(labels) == action.shape[0]:
+            pressed = [label for label, value in zip(labels, action.tolist()) if float(value) >= 0.5]
+            return "+".join(pressed) if pressed else "(none)"
         return "[" + ",".join(str(item) for item in action.flatten().tolist()) + "]"
     return str(action)
+
+
+def action_labels_from_env(env: Any) -> Optional[List[str]]:
+    visited = set()
+    current = env
+    while current is not None and id(current) not in visited:
+        visited.add(id(current))
+        buttons = getattr(current, "buttons", None)
+        if buttons:
+            return [str(button) for button in buttons]
+        current = getattr(current, "env", None)
+
+    unwrapped = getattr(env, "unwrapped", None)
+    buttons = getattr(unwrapped, "buttons", None)
+    if buttons:
+        return [str(button) for button in buttons]
+    return None
 
 
 def observation_to_frame(observation: Any) -> np.ndarray:

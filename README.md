@@ -185,6 +185,9 @@ uv run sf2-rl-hw --help
 - `ppo.checkpoint_freq: 500000`
 - `evaluation.episodes: 5`
 - `recording.episodes: 1`
+- `recording.fps: 10`
+
+`recording.fps` 預設為 `10`，原因是 baseline 的 `frame_skip=6`。目前錄影只會保留每次 agent step 的最後一張畫面，因此若仍用 `60 fps` 輸出，影片會看起來像快轉；`10 fps` 會比較接近正常觀感。
 
 ### 如何修改 ROM 路徑
 
@@ -355,6 +358,35 @@ uv run sf2-rl-hw record \
 - `agent_hp`
 - `enemy_hp`
 - `result`
+
+各欄位含意如下：
+
+- `experiment_name`
+  目前這支影片所屬的實驗名稱，通常對應 config 裡的 `name` 或 `runtime.experiment_name`
+- `checkpoint_step`
+  這個模型 checkpoint 對應的訓練步數，例如 `500000` 代表使用訓練到 50 萬步時儲存的模型
+- `episode`
+  目前錄到第幾個回合
+- `env_step`
+  目前回合中已經執行了多少個遊戲內步數
+- `action`
+  這一步 agent 實際按下的按鍵名稱，會用 `+` 串接，例如 `LEFT+C+Z`。沒有按下的按鍵不會顯示；如果這一步完全沒有輸入，會顯示 `(none)`。
+- `instant_reward`
+  這一步拿到的即時 reward。會受到 reward shaping 設計影響，例如是否成功打到敵人、自己是否受傷、回合是否結束。
+- `episode_return`
+  從這一回合開始到目前為止累積的 reward 總和。可用來看 agent 在整局中的整體表現，而不只是單一步的好壞。
+- `agent_hp`
+  我方角色目前血量
+- `enemy_hp`
+  敵方角色目前血量
+- `result`
+  目前回合狀態。常見值包含 `ongoing`、`win`、`lose`、`draw`、`done`。其中 `ongoing` 代表回合尚未結束，`win` 代表我方獲勝，`lose` 代表我方落敗，`draw` 代表平手，`done` 代表環境結束但未明確判成 win/lose/draw。
+
+判讀影片時，通常可以先看三件事：
+
+- `enemy_hp` 是否有穩定下降，代表 agent 是否真的有對敵人造成有效攻擊
+- `episode_return` 是持續累積還是快速變負，代表目前 reward 設計下 agent 的整體行為是偏有效還是偏吃虧
+- `result` 最後是否從 `ongoing` 變成 `win`，這比單看某一步 reward 更能反映該 checkpoint 的實際表現
 
 ## GPU 使用方式
 

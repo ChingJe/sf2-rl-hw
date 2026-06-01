@@ -31,7 +31,7 @@ recording:
   enabled: true
   episodes: 1
   deterministic: true
-  fps: 30
+  fps: 10
   overlay: true
   save_video: true
   render: false
