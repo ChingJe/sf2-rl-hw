@@ -61,7 +61,7 @@ class StreetFighterEnvWrapper(_GYM.Wrapper):
         if env_config.grayscale:
             obs_shape = (env_config.height, env_config.width, env_config.frame_stack)
         else:
-            obs_shape = (env_config.height, env_config.width, 3)
+            obs_shape = (env_config.height, env_config.width, 3 * env_config.frame_stack)
 
         self.observation_space = _GYM.spaces.Box(
             low=0,
@@ -187,12 +187,7 @@ class StreetFighterEnvWrapper(_GYM.Wrapper):
         if self.env_config.grayscale:
             return np.stack(list(self.frame_buffer), axis=-1)
 
-        group_size = self.env_config.frame_stack // 3
-        channels = []
-        for channel_index in range(3):
-            source_index = channel_index * group_size + (group_size - 1)
-            channels.append(self.frame_buffer[source_index][:, :, channel_index])
-        return np.stack(channels, axis=-1)
+        return np.concatenate(list(self.frame_buffer), axis=-1)
 
     def _map_action(self, action: Any) -> np.ndarray:
         action_array = np.asarray(action, dtype=np.int8).reshape(-1)

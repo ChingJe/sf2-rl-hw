@@ -268,10 +268,6 @@ def _validate_config(config: ExperimentConfig, config_path: Path) -> None:
         raise ValueError("recording.fps must be greater than 0")
     if config.reward.profile not in {"baseline", "reference_v1"}:
         raise ValueError("reward.profile must be one of: baseline, reference_v1")
-    if not config.env.grayscale and config.env.frame_stack % 3 != 0:
-        raise ValueError("env.frame_stack must be divisible by 3 when using RGB stacking")
-
-
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
     merged = dict(base)
     for key, value in override.items():
