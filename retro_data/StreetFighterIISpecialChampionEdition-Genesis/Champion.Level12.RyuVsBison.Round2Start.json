@@ -1,0 +1,15 @@
+{
+  "source_checkpoint": "/home/chingje/rein/sf2-rl-hw/artifacts/checkpoints/baseline-10m/baseline-10m-20260601-204443/ppo_step_10000000.zip",
+  "checkpoint_step": 10000000,
+  "source_state": "Champion.Level12.RyuVsBison",
+  "captured_state": "Champion.Level12.RyuVsBison.Round2Start.AutoTest",
+  "captured_path": "/home/chingje/rein/sf2-rl-hw/retro_data/StreetFighterIISpecialChampionEdition-Genesis/Champion.Level12.RyuVsBison.Round2Start.AutoTest.state",
+  "trigger_agent_step": 142,
+  "trigger_env_step": 852,
+  "trigger_result": "ongoing",
+  "trigger_agent_hp": 176,
+  "trigger_enemy_hp": 176,
+  "last_reward": 0.0,
+  "render": false,
+  "max_steps": 1000
+}

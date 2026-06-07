@@ -12,6 +12,7 @@
 - `train`：訓練模型，定期儲存 checkpoint，並輸出 evaluation metrics
 - `evaluate`：讀取指定 checkpoint，輸出評估結果
 - `record`：讀取單一或多個 checkpoint，產生帶 overlay 的影片
+- `capture-state`：讓 agent 自動打到下一回合開始，並儲存新的 `.state`
 - `YAML config + extends` 的實驗設定管理
 - `baseline` 與 `reference_v1` reward profile
 
@@ -111,7 +112,7 @@ uv sync
 uv run sf2-rl-hw --help
 ```
 
-如果安裝成功，會看到 `train / evaluate / record` 三個子指令。
+如果安裝成功，會看到 `train / evaluate / record / capture-state` 四個子指令。
 
 ## 必要檔案與資料
 
@@ -502,6 +503,63 @@ uv run sf2-rl-hw record \
 - `.mp4` 影片
 - `record_metrics.json`
 - `batch_record_manifest.json`（batch 模式）
+
+## 如何自動抓下一回合 state
+
+如果你想測第二回合，不一定要自己手動打到那裡。
+
+`capture-state` 會：
+
+- 載入指定 checkpoint
+- 讓 agent 繼續打完目前回合
+- 偵測下一回合開始
+- 自動把 emulator 當下狀態存成新的 `.state`
+
+### 基本用法
+
+```bash
+uv run sf2-rl-hw capture-state \
+  --config configs/experiments/baseline-10m.yaml \
+  --checkpoint /path/to/ppo_step_10000000.zip \
+  --output-name Champion.Level12.RyuVsBison.Round2Start
+```
+
+### 如果要邊看畫面邊抓
+
+```bash
+uv run sf2-rl-hw capture-state \
+  --config configs/experiments/baseline-10m.yaml \
+  --checkpoint /path/to/ppo_step_10000000.zip \
+  --output-name Champion.Level12.RyuVsBison.Round2Start \
+  --render
+```
+
+### 輸出會放在哪裡
+
+新的 state 會直接存到：
+
+- `retro_data/<game>/<output-name>.state`
+
+同時也會額外寫一份同名 `.json`，記錄：
+
+- 來源 checkpoint
+- 來源 state
+- 在第幾個 agent step / env step 偵測到下一回合
+
+### 存完之後怎麼用
+
+把 config 裡的 `env.state` 改成新的 state 名稱即可，不要加 `.state` 副檔名：
+
+```yaml
+env:
+  state: Champion.Level12.RyuVsBison.Round2Start
+```
+
+### 注意
+
+- `capture-state` 目前是用 agent 自動打到下一回合，不是手動互動工具
+- 如果換了 `env.buttons` 或 observation 設定，最好用對應的 checkpoint 來抓 state
+- 若 checkpoint 無法穩定打進下一回合，可以加大 `--max-steps`
 
 ### 影片 overlay 會顯示哪些資訊
 
