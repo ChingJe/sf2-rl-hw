@@ -18,6 +18,24 @@
 
 預設 PPO 設定已調整為較保守、較適合約 `8GB VRAM` 顯卡的版本。
 
+## 參考與授權說明
+
+本專案部分設計方向參考自以下公開專案：
+
+- `street-fighter-ai` by `linyiLYi`
+- Repository: https://github.com/linyiLYi/street-fighter-ai
+
+主要參考內容包含：
+
+- `Gym Retro` 環境設定方向
+- `PPO` baseline 參數配置方向
+- `reference_v1` reward shaping 思路
+- `legacy_reference` observation stack 模式
+
+本專案中的程式碼已依本專案需求重新整理、模組化與調整，並未直接將該專案作為主開發倉庫使用。
+
+若你要進一步檢視原始設計與對應實作，請直接參考上述原始 repository 以及其內附授權文件。
+
 ## 目錄結構
 
 ```text
