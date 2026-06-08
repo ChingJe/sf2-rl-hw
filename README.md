@@ -207,6 +207,8 @@ uv run sf2-rl-hw --help
 - `evaluation.episodes: 5`
 - `recording.episodes: 1`
 - `recording.fps: 10`
+- `recording.overlay: true`
+- `recording.crop_black_borders: false`
 
 `recording.fps` 預設為 `10`，原因是 baseline 的 `frame_skip=6`。目前錄影只會保留每次 agent step 的最後一張畫面，因此若仍用 `60 fps` 輸出，影片會看起來像快轉；`10 fps` 會比較接近正常觀感。
 
@@ -250,6 +252,57 @@ uv run sf2-rl-hw --help
 - `100 x 128 x 3`
 
 這種模式不屬於標準時間堆疊，但在固定 state 任務上有時更容易收斂，因此保留為可切換選項。
+
+### 錄影裁切與 overlay 設定
+
+`recording` 區塊目前支援以下和展示有關的設定：
+
+- `overlay: true/false`
+  - 是否整體顯示文字 overlay
+- `overlay_fields`
+  - 要顯示哪些欄位
+- `crop_black_borders: true/false`
+  - 是否自動裁掉模擬器原始畫面中的黑邊
+
+目前支援的 `overlay_fields` 包含：
+
+- `experiment_name`
+- `checkpoint_step`
+- `env_step`
+- `action`
+- `instant_reward`
+- `episode_return`
+- `agent_hp`
+- `enemy_hp`
+- `result`
+
+例如如果你只想保留血量與結果，可以這樣設定：
+
+```yaml
+recording:
+  overlay: true
+  overlay_fields:
+    - checkpoint_step
+    - agent_hp
+    - enemy_hp
+    - result
+```
+
+如果你完全不想顯示 overlay：
+
+```yaml
+recording:
+  overlay: false
+```
+
+如果你想自動裁掉黑邊：
+
+```yaml
+recording:
+  crop_black_borders: true
+```
+
+裁切邏輯會在每支影片的第一張 frame 偵測黑邊範圍，之後整段影片固定使用同一個裁切區域，避免畫面抖動。
 
 ### 可用按鍵設定
 

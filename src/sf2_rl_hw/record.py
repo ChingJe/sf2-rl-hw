@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import numpy as np
 
 from .agents import load_agent
 from .config import ExperimentConfig, load_experiment_config
 from .envs import build_retro_env, prepare_integration_assets
 from .rollout import EpisodeMetrics, run_policy_episodes
 from .utils.logging import dump_json, emit_section
-from .utils.overlay import draw_overlay
+from .utils.overlay import crop_frame, detect_black_border_crop_box, draw_overlay
 from .utils.paths import (
     checkpoint_step_from_path,
     checkpoints_from_glob,
@@ -21,6 +22,19 @@ from .utils.paths import (
 from .utils.video import VideoFrameWriter
 
 POST_RESULT_TAIL_STEPS = 15
+
+
+def _render_video_frame(
+    frame: np.ndarray,
+    overlay_state: Dict[str, Any],
+    overlay_enabled: bool,
+    overlay_fields: List[str],
+    crop_box: Optional[tuple[int, int, int, int]],
+) -> np.ndarray:
+    video_frame = crop_frame(np.asarray(frame, dtype=np.uint8), crop_box)
+    if overlay_enabled:
+        video_frame = draw_overlay(video_frame, overlay_state, fields=overlay_fields)
+    return video_frame
 
 
 def run_recording(
@@ -166,7 +180,12 @@ def record_checkpoint(
         monitor=False,
         terminate_on_result=False,
     )
-    current_writer: Dict[str, Any] = {"writer": None, "output_path": None}
+    current_writer: Dict[str, Any] = {
+        "writer": None,
+        "output_path": None,
+        "crop_box": None,
+        "pending_frames": [],
+    }
     video_outputs: List[str] = []
     errors: List[str] = []
 
@@ -174,6 +193,8 @@ def record_checkpoint(
         if not save_video:
             current_writer["writer"] = None
             current_writer["output_path"] = None
+            current_writer["crop_box"] = None
+            current_writer["pending_frames"] = []
             return
 
         output_path = step_dir / video_filename(
@@ -182,19 +203,78 @@ def record_checkpoint(
         )
         current_writer["writer"] = VideoFrameWriter(output_path.parent, fps)
         current_writer["output_path"] = output_path
+        current_writer["crop_box"] = None
+        current_writer["pending_frames"] = []
 
     def on_step(_: int, frame: Any, overlay_state: Dict[str, Any]) -> None:
         writer = current_writer["writer"]
         if writer is None:
             return
-        video_frame = draw_overlay(frame, overlay_state) if overlay else frame
-        writer.add_frame(video_frame)
+        raw_frame = np.asarray(frame, dtype=np.uint8)
+
+        if not config.recording.crop_black_borders:
+            writer.add_frame(
+                _render_video_frame(
+                    frame=raw_frame,
+                    overlay_state=overlay_state,
+                    overlay_enabled=overlay,
+                    overlay_fields=config.recording.overlay_fields,
+                    crop_box=None,
+                )
+            )
+            return
+
+        crop_box = current_writer["crop_box"]
+        if crop_box is None:
+            current_writer["pending_frames"].append((raw_frame, dict(overlay_state)))
+            detected_box = detect_black_border_crop_box(raw_frame)
+            if detected_box is None:
+                return
+
+            current_writer["crop_box"] = detected_box
+            pending_frames = current_writer["pending_frames"]
+            current_writer["pending_frames"] = []
+            for pending_frame, pending_overlay_state in pending_frames:
+                writer.add_frame(
+                    _render_video_frame(
+                        frame=pending_frame,
+                        overlay_state=pending_overlay_state,
+                        overlay_enabled=overlay,
+                        overlay_fields=config.recording.overlay_fields,
+                        crop_box=detected_box,
+                    )
+                )
+            return
+
+        writer.add_frame(
+            _render_video_frame(
+                frame=raw_frame,
+                overlay_state=overlay_state,
+                overlay_enabled=overlay,
+                overlay_fields=config.recording.overlay_fields,
+                crop_box=crop_box,
+            )
+        )
 
     def on_episode_end(_: int, summary: EpisodeMetrics) -> None:
         writer = current_writer["writer"]
         output_path = current_writer["output_path"]
         if writer is None or output_path is None:
             return
+        pending_frames = current_writer["pending_frames"]
+        crop_box = current_writer["crop_box"]
+        if pending_frames:
+            for pending_frame, pending_overlay_state in pending_frames:
+                writer.add_frame(
+                    _render_video_frame(
+                        frame=pending_frame,
+                        overlay_state=pending_overlay_state,
+                        overlay_enabled=overlay,
+                        overlay_fields=config.recording.overlay_fields,
+                        crop_box=crop_box,
+                    )
+                )
+            current_writer["pending_frames"] = []
         try:
             writer.finalize(output_path)
             video_outputs.append(str(output_path))

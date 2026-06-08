@@ -77,5 +77,16 @@ recording:
   deterministic: true
   fps: 10
   overlay: true
+  overlay_fields:
+    - experiment_name
+    - checkpoint_step
+    - env_step
+    - action
+    - instant_reward
+    - episode_return
+    - agent_hp
+    - enemy_hp
+    - result
+  crop_black_borders: false
   save_video: true
   render: false

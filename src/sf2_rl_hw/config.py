@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 import os
 
+from .utils.overlay import SUPPORTED_OVERLAY_FIELDS
+
 DEFAULT_BUTTONS = [
     "B",
     "A",
@@ -95,6 +97,8 @@ class RecordingConfig:
     deterministic: bool = True
     fps: int = 60
     overlay: bool = True
+    overlay_fields: List[str] = field(default_factory=lambda: list(SUPPORTED_OVERLAY_FIELDS))
+    crop_black_borders: bool = False
     save_video: bool = True
     render: bool = False
 
@@ -269,6 +273,14 @@ def _validate_config(config: ExperimentConfig, config_path: Path) -> None:
         raise ValueError("recording.episodes must be greater than 0")
     if config.recording.fps <= 0:
         raise ValueError("recording.fps must be greater than 0")
+    invalid_overlay_fields = [
+        field_name for field_name in config.recording.overlay_fields if field_name not in SUPPORTED_OVERLAY_FIELDS
+    ]
+    if invalid_overlay_fields:
+        raise ValueError(
+            f"recording.overlay_fields contains unsupported field names: {invalid_overlay_fields}. "
+            f"Supported fields: {SUPPORTED_OVERLAY_FIELDS}"
+        )
     if config.reward.profile not in {"baseline", "reference_v1"}:
         raise ValueError("reward.profile must be one of: baseline, reference_v1")
     if config.env.grayscale and config.env.stack_mode != "standard_rgb":
