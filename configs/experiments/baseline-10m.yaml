@@ -11,6 +11,25 @@ tags:
 runtime:
   experiment_name: baseline-10m
 
+env:
+  state: Champion.Level12.RyuVsBison
+  buttons:
+    - B
+    - A
+    - MODE
+    - START
+    - UP
+    - DOWN
+    - LEFT
+    - RIGHT
+    - C
+    - Y
+    - X
+    - Z
+  grayscale: false
+  frame_stack: 9
+  stack_mode: legacy_reference
+
 ppo:
   total_timesteps: 10000000
   num_envs: 16
@@ -36,3 +55,4 @@ recording:
   overlay: true
   save_video: true
   render: false
+  crop_black_borders: true
